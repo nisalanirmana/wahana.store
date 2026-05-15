@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sri Lanka Vehicle Import Tax Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0e1117;
+    --bg2:       #151b26;
+    --bg3:       #1c2535;
+    --border:    #2a3650;
+    --border2:   #3a4f72;
+    --text:      #e8edf5;
+    --muted:     #7a8fae;
+    --accent:    #3d8ef0;
+    --accent2:   #5ba3f5;
+    --green:     #22c55e;
+    --gold:      #f59e0b;
+    --red:       #ef4444;
+    --purple:    #8b5cf6;
+    --mono:      'DM Mono', monospace;
+    --sans:      'Sora', sans-serif;
+    --radius:    12px;
+    --radius-lg: 20px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 10% 0%, rgba(61,142,240,.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 80%, rgba(139,92,246,.10) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 60% at 50% 50%, rgba(34,197,94,.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 48px 0 36px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-left { flex: 1; min-width: 280px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+  h1 {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.2;
+    color: var(--text);
+  }
+  h1 span { color: var(--accent2); }
+  .header-meta {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 16px;
+  }
+  .header-meta span { display: flex; align-items: center; gap: 6px; }
+  .header-meta span::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+  .rate-badge {
+    background: rgba(245,158,11,.12);
+    border: 1px solid rgba(245,158,11,.3);
+    color: var(--gold);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    align-self: flex-start;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .rate-badge:hover { background: rgba(245,158,11,.2); }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 32px; }
+  .tab {
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .2s;
+    color: var(--muted);
+    background: transparent;
+  }
+  .tab:hover { color: var(--text); background: var(--bg3); }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(to right, var(--border), transparent);
+  }
+
+  /* ── FORM ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .field select, .field input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+  }
+  .field select:focus, .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(61,142,240,.15);
+  }
+  .field input::placeholder { color: var(--border2); }
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    font-size: 12px;
+  }
+  .field-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .field-hint.warning { color: var(--gold); }
+  .field-hint.error   { color: var(--red); }
+
+  /* ── CALCULATE BUTTON ── */
+  .btn-calc {
+    width: 100%;
+    margin-top: 24px;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--accent), #5470e4);
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    text-transform: uppercase;
+  }
+  .btn-calc:hover { opacity: .9; }
+  .btn-calc:active { transform: scale(.99); }
+
+  /* ── RESULTS ── */
+  .results-hidden { display: none; }
+
+  .result-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 520px) { .result-hero { grid-template-columns: 1fr; } }
+
+  .hero-card {
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    display: flex; flex-direction: column; gap: 4px;
+    border: 1px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    opacity: .07;
+    pointer-events: none;
+  }
+  .hero-duty {
+    background: rgba(34,197,94,.08);
+    border-color: rgba(34,197,94,.25);
+  }
+  .hero-duty::before { background: var(--green); }
+  .hero-cost {
+    background: rgba(61,142,240,.08);
+    border-color: rgba(61,142,240,.25);
+  }
+  .hero-cost::before { background: var(--accent); }
+  .hero-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+  .hero-value {
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 700;
+    font-family: var(--mono);
+    letter-spacing: -.02em;
+  }
+  .hero-duty  .hero-value { color: var(--green); }
+  .hero-cost  .hero-value { color: var(--accent2); }
+  .hero-sub { font-size: 12px; color: var(--muted); }
+
+  /* ── BREAKDOWN TABLE ── */
+  .breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .bk-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 3px;
+    transition: border-color .2s;
+  }
+  .bk-item:hover { border-color: var(--border2); }
+  .bk-label { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+  .bk-value { font-size: 15px; font-weight: 600; font-family: var(--mono); color: var(--text); }
+  .bk-value.zero { color: var(--border2); }
+  .bk-pct   { font-size: 11px; color: var(--muted); }
+
+  /* ── STATUS STRIP ── */
+  .status-strip {
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .status-ok      { background: rgba(34,197,94,.1);  border: 1px solid rgba(34,197,94,.25); color: var(--green); }
+  .status-warn    { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: var(--gold); }
+  .status-error   { background: rgba(239,68,68,.1);  border: 1px solid rgba(239,68,68,.3);  color: var(--red); }
+
+  /* ── HS CODE ── */
+  .hs-strip {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .hs-label { color: var(--muted); font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+  .hs-code  { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--purple); }
+  .hs-desc  { color: var(--muted); font-size: 12px; }
+
+  /* ── FORMULA BOX ── */
+  .formula-box {
+    background: rgba(61,142,240,.06);
+    border: 1px solid rgba(61,142,240,.2);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .formula-box b { color: var(--accent2); }
+  .formula-box .hl { color: var(--green); }
+
+  /* ── VEHICLE GUIDE TABLE ── */
+  .guide-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(42,54,80,.6);
+    vertical-align: middle;
+    font-size: 13px;
+    color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(61,142,240,.04); }
+  .num-col  { font-family: var(--mono); }
+  .type-num {
+    display: inline-flex;
+    width: 28px; height: 28px;
+    align-items: center; justify-content: center;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--accent2);
+  }
+  .cat-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .lux-col { font-family: var(--mono); font-size: 12px; color: var(--gold); }
+
+  /* ── FORMULA REFERENCE ── */
+  .fn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .fn-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .fn-sig {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+  .fn-desc { font-size: 12px; color: var(--muted); }
+  .fn-example {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--purple);
+    background: rgba(139,92,246,.08);
+    border-radius: 6px;
+    padding: 6px 10px;
+  }
+
+  /* ── BATCH CALC ── */
+  .batch-table-wrap { overflow-x: auto; margin-top: 4px; }
+  .batch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .batch-table th {
+    padding: 9px 12px; font-size: 11px;
+    font-family: var(--mono); letter-spacing: .07em;
+    text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap; text-align: left;
+  }
+  .batch-table td { padding: 8px 12px; border-bottom: 1px solid rgba(42,54,80,.4); vertical-align: middle; }
+  .batch-table input, .batch-table select {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-family: var(--mono); font-size: 12px;
+    padding: 6px 10px; outline: none; width: 100%;
+    transition: border-color .15s;
+  }
+  .batch-table input:focus, .batch-table select:focus { border-color: var(--accent); }
+  .batch-output { font-family: var(--mono); font-size: 12px; text-align: right; }
+  .batch-output.total-duty { color: var(--green); font-weight: 700; }
+  .batch-output.total-cost { color: var(--accent2); font-weight: 700; }
+  .batch-output.zero { color: var(--border2); }
+  .batch-foot { background: rgba(61,142,240,.06); }
+  .batch-foot td { border-top: 1px solid var(--border2); font-weight: 700; font-family: var(--mono); }
+  .btn-add-row {
+    margin-top: 14px;
+    padding: 9px 18px;
+    background: var(--bg3);
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-add-row:hover { color: var(--accent2); border-color: var(--accent); background: rgba(61,142,240,.05); }
+  .btn-del {
+    padding: 4px 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-del:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .sources { display: flex; flex-direction: column; gap: 4px; }
+  .src-item { display: flex; align-items: center; gap: 8px; }
+  .src-item::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border2);
+    flex-shrink: 0;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .anim { animation: fadeUp .35s ease both; }
+  .anim-delay-1 { animation-delay: .05s; }
+  .anim-delay-2 { animation-delay: .10s; }
+  .anim-delay-3 { animation-delay: .15s; }
+
+  @media (max-width: 640px) {
+    .card { padding: 20px 18px; }
+    header { padding: 28px 0 24px; }
+    .result-hero { grid-template-columns: 1fr; }
+    .tabs { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-left">
+      <div class="eyebrow">Sri Lanka Customs</div>
+      <h1>Vehicle Import<br><span>Tax Calculator</span></h1>
+      <div class="header-meta">
+        <span>GN 2418-43 · 10.01.2025</span>
+        <span>GN 2421/41-43 · 31.01.2025</span>
+        <span>GN 2434/04 · 28.04.2025</span>
+        <span>SSCL Amend. Act No.10/2026 · eff. 01.05.2026</span>
+        <span>16 vehicle types</span>
+      </div>
+    </div>
+    <div>
+      <div class="rate-badge" id="rateBadge" onclick="document.getElementById('inputRate').focus()">
+        Rate: <span id="rateDisplay">2.10</span> LKR/¥
+      </div>
+    </div>
+  </header>
+
+  <!-- ── TABS ── -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('calc',this)">Calculator</button>
+    <button class="tab" onclick="showTab('batch',this)">Batch</button>
+    <button class="tab" onclick="showTab('guide',this)">Vehicle Guide</button>
+    <button class="tab" onclick="showTab('formulas',this)">Formulas</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 1 — SINGLE CALCULATOR
+  ════════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-calc">
+
+    <div class="card anim">
+      <div class="card-title">Vehicle Details</div>
+      <div class="form-grid">
+
+        <div class="field" style="grid-column: 1 / -1">
+          <label>Vehicle Type</label>
+          <div class="select-wrap">
+            <select id="inputType" onchange="onTypeChange()">
+              <option value="">— Select vehicle type —</option>
+              <optgroup label="Petrol Cars">
+                <option value="1">1 · Petrol Car</option>
+              </optgroup>
+              <optgroup label="Petrol Hybrid / PHEV">
+                <option value="2">2 · Petrol Hybrid  (Non-Plug-in)</option>
+                <option value="3">3 · Petrol Plug-in Hybrid  (PHEV)</option>
+              </optgroup>
+              <optgroup label="Diesel Cars">
+                <option value="4">4 · Diesel Car</option>
+              </optgroup>
+              <optgroup label="Diesel Hybrid / PHEV">
+                <option value="5">5 · Diesel Hybrid  (Non-Plug-in)</option>
+                <option value="6">6 · Diesel Plug-in Hybrid  (PHEV)</option>
+              </optgroup>
+              <optgroup label="Electric / e-Power">
+                <option value="7">7 · Electric Car  (BEV)  — enter kW</option>
+                <option value="8">8 · Range Extender / e-Power  — enter kW</option>
+              </optgroup>
+              <optgroup label="Vans">
+                <option value="9">9  · Petrol Cargo Van</option>
+                <option value="10">10 · Diesel Cargo Van</option>
+                <option value="11">11 · Diesel Van  13–24 Seat</option>
+                <option value="12">12 · Petrol Van  13–24 Seat</option>
+              </optgroup>
+              <optgroup label="Double Cabs">
+                <option value="13">13 · Diesel Double Cab</option>
+                <option value="14">14 · Petrol Double Cab</option>
+              </optgroup>
+              <optgroup label="Buses">
+                <option value="15">15 · Bus  25–34 Seat</option>
+                <option value="16">16 · Bus  35+ Seat</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="field-hint" id="typeHint"></div>
+        </div>
+
+        <div class="field">
+          <label id="ccLabel">Engine Capacity (cc)</label>
+          <input type="number" id="inputCC" placeholder="e.g. 1496" min="1" step="1" oninput="onInputChange()">
+          <div class="field-hint" id="ccHint">Enter displacement in cc</div>
+        </div>
+
+        <div class="field">
+          <label>CIF Value  (Japanese Yen ¥)</label>
+          <input type="number" id="inputCIF" placeholder="e.g. 2744000" min="1" step="1000" oninput="onInputChange()">
+          <div class="field-hint">Cost + Insurance + Freight in ¥</div>
+        </div>
+
+        <div class="field">
+          <label>Exchange Rate  (LKR per ¥)</label>
+          <input type="number" id="inputRate" placeholder="e.g. 2.1" min="0.01" step="0.01" value="2.1" oninput="onInputChange(); document.getElementById('rateDisplay').textContent=parseFloat(this.value||2.1).toFixed(2)">
+          <div class="field-hint">e.g. 2.1 → ¥1 = LKR 2.10</div>
+        </div>
+
+        <div class="field">
+          <label>Vehicle Age  (years)</label>
+          <input type="number" id="inputAge" placeholder="e.g. 2" min="0" max="30" step="0.5" oninput="onInputChange()">
+          <div class="field-hint" id="ageHint">Years from manufacture to import</div>
+        </div>
+
+      </div>
+      <button class="btn-calc" onclick="calculate()">Calculate Import Tax</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="resultsSection" class="results-hidden">
+
+      <div id="statusStrip" class="status-strip anim"></div>
+
+      <div class="result-hero anim anim-delay-1">
+        <div class="hero-card hero-duty">
+          <div class="hero-label">Total Duty / Tax</div>
+          <div class="hero-value" id="resTotalDuty">—</div>
+          <div class="hero-sub" id="resDutyPct">—</div>
+        </div>
+        <div class="hero-card hero-cost">
+          <div class="hero-label">Total Vehicle Cost</div>
+          <div class="hero-value" id="resTotalCost">—</div>
+          <div class="hero-sub" id="resCostSub">CIF LKR + Total Duty</div>
+        </div>
+      </div>
+
+      <div class="card anim anim-delay-2" style="padding-bottom:20px">
+        <div class="card-title">Duty Breakdown</div>
+        <div class="breakdown" id="breakdown"></div>
+
+        <div class="hs-strip" id="hsStrip" style="margin-top:4px">
+          <div>
+            <div class="hs-label">HS Code</div>
+            <div class="hs-code" id="resHS">—</div>
+          </div>
+          <div class="hs-desc" id="resHSDesc">—</div>
+        </div>
+      </div>
+
+      <div class="card anim anim-delay-3">
+        <div class="card-title">Formula Trace</div>
+        <div class="formula-box" id="formulaTrace"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 2 — BATCH CALCULATOR
+  ════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-batch">
+    <div class="card">
+      <div class="card-title">Batch Calculator — Multiple Vehicles</div>
+      <div class="batch-table-wrap">
+        <table class="batch-table" id="batchTable">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Type #</th>
+              <th>cc / kW</th>
+              <th>CIF (¥)</th>
+              <th>Rate</th>
+              <th>Age</th>
+              <th style="text-align:right">CIF (LKR)</th>
+              <th style="text-align:right">XID</th>
+              <th style="text-align:right">CID</th>
+              <th style="text-align:right">SUR</th>
+              <th style="text-align:right">VAT</th>
+              <th style="text-align:right">Luxury Tax</th>
+              <th style="text-align:right">Total Duty</th>
+              <th style="text-align:right">Total Cost</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="batchBody"></tbody>
+          <tfoot id="batchFoot"></tfoot>
+        </table>
+      </div>
+      <button class="btn-add-row" onclick="addBatchRow()">＋ Add Vehicle</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 3 — VEHICLE GUIDE
+  ════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-guide">
+    <div class="card">
+      <div class="card-title">Vehicle Type Reference</div>
+      <div class="guide-table-wrap">
+        <table id="guideTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Vehicle Type</th>
+              <th>XID Rate</th>
+              <th>Max Age</th>
+              <th>Luxury Threshold</th>
+              <th>Luxury Rate</th>
+              <th>SUR</th>
+            </tr>
+          </thead>
+          <tbody id="guideBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <div class="card-title">Key Notes</div>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--muted);line-height:1.7">
+        <p><b style="color:var(--accent2)">Types 7 & 8 (Electric / e-Power)</b> — enter motor <b style="color:var(--text)">kW</b> in the capacity field, not cc. Rates updated per GN 2421/42 (01.02.2025).</p>
+        <p><b style="color:var(--purple)">Type 8 (Range Extender / e-Power)</b> — petrol engine drives <em>only a generator</em> on board; the electric motor always drives the wheels. e.g. Nissan Note e-Power, Nissan Serena e-Power, BMW i3 Rex, Mazda MX-30 R-EV. HS codes 8703.80.51–.64. Same rates as BEV.</p>
+        <p><b style="color:var(--gold)">Types 10, 11, 13, 14</b> — fixed per-unit XID regardless of engine size. Any cc value can be entered.</p>
+        <p><b style="color:var(--green)">CID</b> = 20% of CIF directly. CIF × 110% is used <em>only</em> as part of the VAT base (GN 2421/41) — not for CID. Type 8 (e-Power) rates updated per GN 2434/04.</p>
+        <p><b style="color:var(--muted)">All figures are approximate.</b> Confirm with your clearing agent. Sources: GN 2418-43 (10.01.2025) + GN 2421/41-43 (31.01.2025).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 4 — FORMULAS
+  ════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-formulas">
+    <div class="card">
+      <div class="card-title">Tax Formula</div>
+      <div class="formula-box" style="font-size:13px">
+        <b>XID</b>       = Tax Rate per cc/kW × cc/kW  <span style="color:var(--muted)">(or fixed per-unit amount)</span><br>
+        <b>CID</b>       = CIF × 20%<br>
+        <b>SUR</b>       = CID × 50%  <span style="color:var(--muted)">(zero for Electric, e-Power, and Bus)</span><br>
+        <b>VAT Base</b>  = (CIF × 110%) + XID + CID + SUR  <span style="color:var(--muted)">(GN 2421/41)</span><br>
+        <b>VAT</b>       = VAT Base × 18%<br>
+        <b>Luxury Tax</b>= MAX(0 , CIF LKR − Threshold) × Luxury Rate<br>
+        <b>VEL</b>       = <span class="hl">Rs.15,000</span>  (flat, all vehicles)<br>
+        <b>PAL</b>       = CIF × 110% × 7.5%  <span style="color:var(--muted)">(buses only)</span><br>
+        <b>SSL</b>       = CIF × 110% × 2.5%  <span style="color:var(--muted)">(buses only)</span><br>
+        <b>SSCL</b>      = (CIF × 110% + XID + CID + SUR) × 2.5%  <span style="color:var(--muted)">(eff. 01.05.2026 — Amendment Act No.10/2026)</span><br><br>
+        <b style="color:var(--green)">TOTAL DUTY</b> = XID + CID + SUR + VAT + Luxury Tax + VEL  <span style="color:var(--muted)">(+ PAL + SSL for buses)</span><br>
+        <b style="color:var(--accent2)">TOTAL COST</b>  = CIF LKR + TOTAL DUTY
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Google Sheets / Excel Functions</div>
+      <div class="fn-grid" id="fnGrid"></div>
+      <div style="margin-top:16px;font-size:12px;color:var(--muted);line-height:1.8">
+        Install the Apps Script file (<code style="color:var(--purple)">SL_Tax_Calculator_v5_GoogleSheets.gs</code>) via
+        Extensions → Apps Script in Google Sheets. Run <code style="color:var(--green)">setupCalculatorSheet()</code> once to auto-build all sheets.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Luxury Tax Thresholds  (GN 2421/41 · 01.02.2025)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+        <div class="bk-item"><div class="bk-label">Petrol Car  (types 1)</div><div class="bk-value" style="color:var(--gold)">LKR 5,000,000</div><div class="bk-pct">100% on excess</div></div>
+        <div class="bk-item"><div class="bk-label">Petrol Hybrid / PHEV  (2, 3)</div><div class="bk-value" style="color:var(--gold)">LKR 5,500,000</div><div class="bk-pct">80% on excess</div></div>
+        <div class="bk-item"><div class="bk-label">Diesel Car  (4)</div><div class="bk-value" style="color:var(--gold)">LKR 5,000,000</div><div class="bk-pct">120% on excess</div></div>
+        <div class="bk-item"><div class="bk-label">Diesel Hybrid / PHEV  (5, 6)</div><div class="bk-value" style="color:var(--gold)">LKR 5,500,000</div><div class="bk-pct">90% on excess</div></div>
+        <div class="bk-item"><div class="bk-label">Electric BEV  (7)</div><div class="bk-value" style="color:var(--gold)">LKR 6,000,000</div><div class="bk-pct">60% on excess</div></div>
+        <div class="bk-item"><div class="bk-label">Range Extender  (8)</div><div class="bk-value" style="color:var(--gold)">LKR 6,000,000</div><div class="bk-pct">60% on excess</div></div>
+        <div class="bk-item"><div class="bk-label">Vans / Double Cabs / Buses</div><div class="bk-value" style="color:var(--border2)">—</div><div class="bk-pct">No luxury tax</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="sources">
+      <div style="font-weight:600;color:var(--muted);margin-bottom:6px">Official Sources</div>
+      <div class="src-item">G.N. 2418-43 dated 10.01.2025 — Excise Special Provisions (vehicles)</div>
+      <div class="src-item">G.N. 2421/41 dated 31.01.2025 — Luxury Tax on Motor Vehicles</div>
+      <div class="src-item">G.N. 2421/42 dated 31.01.2025 — Electric Vehicle Excise Duty</div>
+      <div class="src-item">G.N. 2421/43 dated 31.01.2025 — Surcharge on Customs Import Duty</div>
+    </div>
+    <div style="text-align:right;align-self:flex-end">
+      <div style="color:var(--border2)">All figures approximate.</div>
+      <div style="color:var(--border2)">Confirm with your clearing agent.</div>
+    </div>
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+// =============================================================================
+// CORE CALCULATION ENGINE
+// =============================================================================
+
+const VEHICLE_TYPES = [
+  { n:1,  name:"Petrol Car",                    short:"Petrol Car",          color:"#22c55e", bg:"rgba(34,197,94,.12)",  maxAge:3, lt:5e6,   lp:1.0, sur:true,  note:"Standard petrol car, station wagon, racing car" },
+  { n:2,  name:"Petrol Hybrid (Non-Plug-in)",   short:"Petrol Hybrid",       color:"#3d8ef0", bg:"rgba(61,142,240,.12)", maxAge:3, lt:5.5e6, lp:0.8, sur:true,  note:"e.g. Toyota Aqua, Prius, Honda Fit Hybrid" },
+  { n:3,  name:"Petrol Plug-in Hybrid (PHEV)",  short:"Petrol PHEV",         color:"#5ba3f5", bg:"rgba(91,163,245,.12)", maxAge:3, lt:5.5e6, lp:0.8, sur:true,  note:"e.g. Toyota Prius PHV, Mitsubishi Outlander PHEV" },
+  { n:4,  name:"Diesel Car",                    short:"Diesel Car",           color:"#ef4444", bg:"rgba(239,68,68,.12)",  maxAge:3, lt:5e6,   lp:1.2, sur:true,  note:"Compression-ignition passenger car" },
+  { n:5,  name:"Diesel Hybrid (Non-Plug-in)",   short:"Diesel Hybrid",        color:"#f59e0b", bg:"rgba(245,158,11,.12)", maxAge:3, lt:5.5e6, lp:0.9, sur:true,  note:"e.g. Nissan X-Trail diesel hybrid, Toyota Harrier diesel" },
+  { n:6,  name:"Diesel Plug-in Hybrid (PHEV)",  short:"Diesel PHEV",          color:"#fb923c", bg:"rgba(251,146,60,.12)", maxAge:3, lt:5.5e6, lp:0.9, sur:true,  note:"e.g. Mitsubishi Outlander diesel PHEV" },
+  { n:7,  name:"Electric Car (BEV)",            short:"Electric BEV",         color:"#a3e635", bg:"rgba(163,230,53,.12)", maxAge:3, lt:6e6,   lp:0.6, sur:false, note:"Pure battery electric — charged from grid. Enter motor kW." },
+  { n:8,  name:"Range Extender / e-Power",      short:"Range Extender",       color:"#8b5cf6", bg:"rgba(139,92,246,.12)", maxAge:3, lt:6e6,   lp:0.6, sur:false, note:"Petrol engine ONLY charges on-board battery — never drives wheels. e.g. Nissan Note e-Power, Serena e-Power. Rates per GN 2434/04. Enter motor kW." },
+  { n:9,  name:"Petrol Cargo Van",              short:"Petrol Cargo Van",     color:"#94a3b8", bg:"rgba(148,163,184,.1)", maxAge:4, lt:0,     lp:0,   sur:true,  note:"8704.31.93 — Rs.2,100/cc" },
+  { n:10, name:"Diesel Cargo Van",              short:"Diesel Cargo Van",     color:"#94a3b8", bg:"rgba(148,163,184,.1)", maxAge:4, lt:0,     lp:0,   sur:true,  note:"8704.21.93 — Rs.5,432,650/unit (per unit)" },
+  { n:11, name:"Diesel Van  13–24 Seat",        short:"Diesel Van 13-24",     color:"#94a3b8", bg:"rgba(148,163,184,.1)", maxAge:4, lt:0,     lp:0,   sur:true,  note:"8702.10.39 — Rs.5,432,650/unit (per unit)" },
+  { n:12, name:"Petrol Van  13–24 Seat",        short:"Petrol Van 13-24",     color:"#94a3b8", bg:"rgba(148,163,184,.1)", maxAge:4, lt:0,     lp:0,   sur:true,  note:"8702.90.39 — Rs.2,100/cc" },
+  { n:13, name:"Diesel Double Cab",             short:"Diesel Double Cab",    color:"#64748b", bg:"rgba(100,116,139,.1)", maxAge:4, lt:0,     lp:0,   sur:true,  note:"8704.21.91 — Rs.6,036,300/unit (per unit)" },
+  { n:14, name:"Petrol Double Cab",             short:"Petrol Double Cab",    color:"#64748b", bg:"rgba(100,116,139,.1)", maxAge:4, lt:0,     lp:0,   sur:true,  note:"8704.31.91 — Rs.6,036,300/unit (per unit)" },
+  { n:15, name:"Bus  25–34 Seat",               short:"Bus 25-34 Seat",       color:"#475569", bg:"rgba(71,85,105,.12)",  maxAge:5, lt:0,     lp:0,   sur:false, note:"PAL 7.5% + SSL 2.5% + VAT 18% on (CIF×110%). No CID/SUR/Luxury." },
+  { n:16, name:"Bus  35+ Seat",                 short:"Bus 35+ Seat",         color:"#475569", bg:"rgba(71,85,105,.12)",  maxAge:5, lt:0,     lp:0,   sur:false, note:"PAL 7.5% + SSL 2.5% + VAT 18% on (CIF×110%). No CID/SUR/Luxury." },
+];
+
+function calcTax(vtype, cc, cifJPY, rate, age, component) {
+  vtype = +vtype; cc = +cc; cifJPY = +cifJPY; rate = +rate; age = +age;
+  if (!vtype || !cc || !cifJPY || !rate || isNaN(age)) return 0;
+
+  const cif     = cifJPY * rate;
+  const vatBase = cif * 1.1;   // CIF×110% — VAT base component only (GN 2421/41)
+  const isEV    = vtype === 7 || vtype === 8;
+  const isBus   = vtype === 15 || vtype === 16;
+
+  let xidRate = 0, minXID = 0, luxT = 0, luxP = 0, isUnit = false;
+
+  switch (vtype) {
+    case 1: luxT=5e6; luxP=1.0;
+      if(cc<=1000){xidRate=2450;minXID=1992000;}
+      else if(cc<=1300)xidRate=3850; else if(cc<=1500)xidRate=4450;
+      else if(cc<=1600)xidRate=5150; else if(cc<=1800)xidRate=6400;
+      else if(cc<=2000)xidRate=7700; else if(cc<=2500)xidRate=8450;
+      else if(cc<=2750)xidRate=9650; else if(cc<=3000)xidRate=10850;
+      else if(cc<=4000)xidRate=12050; else xidRate=13300; break;
+    case 2: luxT=5.5e6; luxP=0.8;
+      if(cc<=1000){isUnit=true;minXID=1810900;}
+      else if(cc<=1300)xidRate=2750; else if(cc<=1500)xidRate=3450;
+      else if(cc<=1600)xidRate=4800; else if(cc<=1800)xidRate=6300;
+      else if(cc<=2000)xidRate=6900; else if(cc<=2500)xidRate=7250;
+      else if(cc<=2750)xidRate=8450; else if(cc<=3000)xidRate=9650;
+      else if(cc<=4000)xidRate=10850; else xidRate=12050; break;
+    case 3: luxT=5.5e6; luxP=0.8;
+      if(cc<=1000){isUnit=true;minXID=1810900;}
+      else if(cc<=1300)xidRate=2750; else if(cc<=1500)xidRate=3450;
+      else if(cc<=1600)xidRate=4800; else if(cc<=1800)xidRate=6250;
+      else if(cc<=2000)xidRate=6900; else if(cc<=2500)xidRate=7250;
+      else if(cc<=2750)xidRate=8450; else if(cc<=3000)xidRate=9650;
+      else if(cc<=4000)xidRate=10850; else xidRate=12050; break;
+    case 4: luxT=5e6; luxP=1.2;
+      if(cc<=1500)xidRate=5550; else if(cc<=1600)xidRate=6950;
+      else if(cc<=1800)xidRate=8300; else if(cc<=2500)xidRate=9650;
+      else if(cc<=2750)xidRate=10850; else if(cc<=3000)xidRate=12050;
+      else if(cc<=4000)xidRate=13300; else xidRate=14500; break;
+    case 5: luxT=5.5e6; luxP=0.9;
+      if(cc<=1500)xidRate=4150; else if(cc<=1600)xidRate=5550;
+      else if(cc<=1800)xidRate=6900; else if(cc<=2000)xidRate=8350;
+      else if(cc<=2500)xidRate=8450; else if(cc<=2750)xidRate=9650;
+      else if(cc<=3000)xidRate=10850; else if(cc<=4000)xidRate=12050;
+      else xidRate=13300; break;
+    case 6: luxT=5.5e6; luxP=0.9;
+      if(cc<=1500)xidRate=4150; else if(cc<=1600)xidRate=5550;
+      else if(cc<=1800)xidRate=6900; else if(cc<=2000)xidRate=8300;
+      else if(cc<=2500)xidRate=8450; else if(cc<=2750)xidRate=9650;
+      else if(cc<=3000)xidRate=10850; else if(cc<=4000)xidRate=12050;
+      else xidRate=13300; break;
+    // ── 7. ELECTRIC CAR / BEV  (GN 2421/42 — 8703.80.31–.44)
+    case 7:
+      luxT=6e6; luxP=0.6;
+      { const b7 = age>3?[[50,48300],[100,72400],[200,108700],[9999,144900]]
+                 :age<=1?[[50,18100],[100,24100],[200,36200],[9999,96600]]
+                        :[[50,36200],[100,36200],[200,60400],[9999,132800]];
+        for(const[mx,r]of b7){if(cc<=mx){xidRate=r;break;}} } break;
+    // ── 8. RANGE EXTENDER / e-POWER (petrol, not pluggable)  (GN 2434/04 — 8703.80.71–.78)
+    //       e.g. Nissan Note e-Power, Serena e-Power. Engine ONLY charges on-board battery.
+    case 8:
+      luxT=6e6; luxP=0.6;
+      { const b8 = age>3?[[50,57960],[100,86880],[200,130440],[9999,173880]]
+                 :age<=1?[[50,30770],[100,40970],[200,41630],[9999,111090]]
+                        :[[50,43440],[100,43440],[200,63420],[9999,139440]];
+        for(const[mx,r]of b8){if(cc<=mx){xidRate=r;break;}} } break;
+    case 9:  xidRate=2100; luxT=0; luxP=0; break;
+    case 10: minXID=5432650; isUnit=true; luxT=0; luxP=0; break;
+    case 11: minXID=5432650; isUnit=true; luxT=0; luxP=0; break;
+    case 12: xidRate=2100; luxT=0; luxP=0; break;
+    case 13: minXID=6036300; isUnit=true; luxT=0; luxP=0; break;
+    case 14: minXID=6036300; isUnit=true; luxT=0; luxP=0; break;
+    case 15: case 16: luxT=0; luxP=0; break;
+  }
+
+  const xid = isUnit ? minXID : Math.max(xidRate * cc, minXID);
+  let cid = isBus ? 0 : cif * 0.20;            // CID = 20% of CIF directly
+  let sur = (isEV || isBus) ? 0 : cid * 0.50;
+  let vat = (vatBase + xid + cid + sur) * 0.18; // VAT base uses CIF×110% per GN 2421/41
+  const lux = (cif > luxT && luxT > 0) ? (cif - luxT) * luxP : 0;
+  const vel = 15000;
+  let pal = 0, ssl = 0;
+  if (isBus) { pal=vatBase*.075; ssl=vatBase*.025; vat=vatBase*.18; cid=0; sur=0; } // SSCL also applies to buses
+
+  const sscl  = (vatBase + xid + cid + sur) * 0.025; // SSCL 2.5% of VAT base per SSCL Amendment Act No.10 of 2026 (eff. 01.05.2026)
+  const total = xid+cid+sur+vat+lux+vel+pal+ssl+sscl;
+
+  const map = { CIF:cif, VATBASE:vatBase, XID:xid, CID:cid, SUR:sur, VAT:vat,
+                LUX:lux, VEL:vel, PAL:pal, SSL:ssl, SSCL:sscl, TOTAL:total, COST:cif+total };
+  return component ? (map[component] || 0) : map;
+}
+
+function getHSCode(vtype, cc, age) {
+  vtype=+vtype; cc=+cc; age=+age;
+  switch(vtype){
+    case 1: return cc<=1000?"8703.21.69":cc<=1500?"8703.22.50":cc<=2000?"8703.23.52–59":cc<=3000?"8703.23.70–80":"8703.24.50";
+    case 2: return cc<=1000?"8703.40.28":cc<=1500?"8703.40.35":cc<=2000?"8703.40.51–58":cc<=3000?"8703.40.71":"8703.40.91";
+    case 3: return cc<=1000?"8703.60.28":cc<=1500?"8703.60.35":cc<=2000?"8703.60.51–58":cc<=3000?"8703.60.71":"8703.60.91";
+    case 4: return cc<=1500?"8703.31.70":cc<=2000?"8703.32.52–59":cc<=2500?"8703.33.50":"8703.33.50";
+    case 5: return cc<=1500?"8703.50.35":cc<=2000?"8703.50.51–58":cc<=3000?"8703.50.68–78":"8703.50.88";
+    case 6: return cc<=1500?"8703.70.35":cc<=2000?"8703.70.51–58":cc<=3000?"8703.70.68–78":"8703.70.98";
+    case 7: return age>3?(cc<=50?"8703.80.41":cc<=100?"8703.80.42":cc<=200?"8703.80.43":"8703.80.44")
+                       :(cc<=50?"8703.80.31":cc<=100?"8703.80.32":cc<=200?"8703.80.33":"8703.80.34");
+    case 8: return age>3?(cc<=50?"8703.80.72":cc<=100?"8703.80.74":cc<=200?"8703.80.76":"8703.80.78")
+                       :(cc<=50?"8703.80.71":cc<=100?"8703.80.73":cc<=200?"8703.80.75":"8703.80.77");
+    case 9:  return "8704.31.93";
+    case 10: return "8704.21.93";
+    case 11: return "8702.10.39";
+    case 12: return "8702.90.39";
+    case 13: return "8704.21.91";
+    case 14: return "8704.31.91";
+    case 15: return "8702.10.59";
+    case 16: return "8702.10.79";
+    default: return "—";
+  }
+}
+
+// =============================================================================
+// FORMAT HELPERS
+// =============================================================================
+const fmtLKR = n => 'LKR ' + Math.round(n).toLocaleString('en-LK');
+const fmtM   = n => { const m = n/1e6; return (m >= 1 ? m.toFixed(2) + ' M' : Math.round(n).toLocaleString('en-LK')); };
+const fmtN   = n => Math.round(n).toLocaleString('en-LK');
+
+// =============================================================================
+// CALCULATOR LOGIC
+// =============================================================================
+
+function onTypeChange() {
+  const vt = +document.getElementById('inputType').value;
+  const info = VEHICLE_TYPES.find(t => t.n === vt);
+  if (!info) { document.getElementById('typeHint').textContent = ''; return; }
+
+  const ccLabel = document.getElementById('ccLabel');
+  const ccHint  = document.getElementById('ccHint');
+  const typeHint = document.getElementById('typeHint');
+
+  if (vt === 7 || vt === 8) {
+    ccLabel.textContent = 'Motor Capacity (kW)';
+    ccHint.textContent  = 'Enter motor output in kW (not cc)';
+    ccHint.className    = 'field-hint warning';
+  } else {
+    ccLabel.textContent = 'Engine Capacity (cc)';
+    ccHint.textContent  = [10,11,13,14].includes(vt) ? 'Per-unit vehicle — cc does not affect calculation' : 'Enter engine displacement in cc';
+    ccHint.className    = 'field-hint';
+  }
+
+  typeHint.textContent = info.note;
+  typeHint.style.color = info.color;
+  onInputChange();
+}
+
+function onInputChange() {
+  const age   = +document.getElementById('inputAge').value;
+  const vt    = +document.getElementById('inputType').value;
+  const hint  = document.getElementById('ageHint');
+  if (!vt || !age) { hint.textContent = 'Years from manufacture to import'; hint.className = 'field-hint'; return; }
+  const info  = VEHICLE_TYPES.find(t => t.n === vt);
+  if (!info) return;
+  if (age > info.maxAge) {
+    hint.textContent = `⚠ Exceeds ${info.maxAge}-year limit for this type`;
+    hint.className = 'field-hint error';
+  } else {
+    hint.textContent = `✓ Within ${info.maxAge}-year limit`;
+    hint.className = 'field-hint';
+    hint.style.color = '#22c55e';
+  }
+}
+
+function calculate() {
+  const vt  = +document.getElementById('inputType').value;
+  const cc  = +document.getElementById('inputCC').value;
+  const cif = +document.getElementById('inputCIF').value;
+  const rt  = +document.getElementById('inputRate').value || 2.1;
+  const age = +document.getElementById('inputAge').value;
+
+  if (!vt || !cc || !cif || !rt || isNaN(age)) {
+    alert('Please fill in all fields before calculating.');
+    return;
+  }
+
+  const R = calcTax(vt, cc, cif, rt, age);
+  const info = VEHICLE_TYPES.find(t => t.n === vt);
+
+  const section = document.getElementById('resultsSection');
+  section.classList.remove('results-hidden');
+  section.querySelectorAll('.anim').forEach(el => {
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = '';
+  });
+
+  // Status strip
+  const strip = document.getElementById('statusStrip');
+  const ageOk = age <= info.maxAge;
+  if (!ageOk) {
+    strip.className = 'status-strip status-error anim';
+    strip.textContent = `⚠ Vehicle age (${age} yrs) exceeds the ${info.maxAge}-year import limit for ${info.short}.`;
+  } else if (R.LUX > 0) {
+    strip.className = 'status-strip status-warn anim';
+    strip.textContent = `⚠ Luxury Tax applies — CIF LKR ${fmtN(R.CIF)} exceeds the LKR ${fmtN(info.lt)} threshold.`;
+  } else {
+    strip.className = 'status-strip status-ok anim';
+    strip.textContent = `✓ Calculation complete — ${info.name}  ·  ${cc}${vt>=7&&vt<=8?' kW':' cc'}  ·  ${age} yr`;
+  }
+
+  // Hero
+  document.getElementById('resTotalDuty').textContent = fmtLKR(R.TOTAL);
+  document.getElementById('resDutyPct').textContent   = `${((R.TOTAL/R.CIF)*100).toFixed(1)}% of CIF LKR`;
+  document.getElementById('resTotalCost').textContent = fmtLKR(R.COST);
+  document.getElementById('resCostSub').textContent   = `CIF LKR ${fmtLKR(R.CIF)} + Duty`;
+
+  // Breakdown
+  const items = [
+    { l:'CIF LKR',    v:R.CIF,     pct:'' },
+    { l:'VAT Base',   v:R.VATBASE, pct:'CIF × 110% (VAT only)' },
+    { l:'XID',        v:R.XID,     pct:'' },
+    { l:'CID  (20%)', v:R.CID,     pct:'20% of CIF' },
+    { l:'SUR  (50%)', v:R.SUR,     pct:'' },
+    { l:'VAT  (18%)', v:R.VAT,     pct:'' },
+    { l:'SSCL (2.5%)',v:R.SSCL,   pct:'All vehicles · eff. 01.05.2026' },
+    { l:'Luxury Tax', v:R.LUX,     pct: R.LUX>0 ? `${(info.lp*100).toFixed(0)}% of excess` : '' },
+    { l:'VEL',        v:R.VEL,     pct:'Flat' },
+    { l:'PAL  (7.5%)',v:R.PAL,     pct:'Bus only' },
+    { l:'SSL  (2.5%)',v:R.SSL,     pct:'Bus only' },
+  ].filter(x => x.v !== 0 || ['CID','SUR','LUX','PAL','SSL','SSCL'].includes(x.l.split(' ')[0]));
+
+  document.getElementById('breakdown').innerHTML = items.map(it => `
+    <div class="bk-item">
+      <div class="bk-label">${it.l}</div>
+      <div class="bk-value ${it.v===0?'zero':''}">${it.v===0 ? '—' : fmtLKR(it.v)}</div>
+      ${it.pct ? `<div class="bk-pct">${it.pct}</div>` : ''}
+    </div>`).join('');
+
+  // HS Code
+  const hs = getHSCode(vt, cc, age);
+  document.getElementById('resHS').textContent     = hs;
+  document.getElementById('resHSDesc').textContent = info.name + ' · GN 2418-43 / 2421-42';
+
+  // Formula trace
+  const ccUnit = (vt===7||vt===8) ? 'kW' : 'cc';
+  document.getElementById('formulaTrace').innerHTML = `
+<b>CIF LKR</b>   = ¥${fmtN(cif)} × ${rt} = <b class="hl">${fmtLKR(R.CIF)}</b>
+<b>VAT Base</b>  = ${fmtLKR(R.CIF)} × 110% = <b class="hl">${fmtLKR(R.VATBASE)}</b>  <span style="color:var(--muted);font-size:11px">(CIF×110% — used for VAT & SSCL base per GN 2421/41)</span>
+<b>XID</b>       = ${R.XID === 0 ? '—' : (info.n<=8 ? `${fmtN(R.XID/cc)}/cc × ${cc}${ccUnit}` : 'Per-unit fixed')} = <b class="hl">${fmtLKR(R.XID)}</b>
+<b>CID</b>       = ${fmtLKR(R.CIF)} × 20% = <b class="hl">${fmtLKR(R.CID)}</b>
+<b>SUR</b>       = ${fmtLKR(R.CID)} × 50% = <b class="hl">${fmtLKR(R.SUR)}</b>
+<b>VAT Base</b>  = (CIF×110%) + XID + CID + SUR = <b class="hl">${fmtLKR(R.VATBASE+R.XID+R.CID+R.SUR)}</b>
+<b>VAT</b>       = ${fmtLKR(R.VATBASE+R.XID+R.CID+R.SUR)} × 18% = <b class="hl">${fmtLKR(R.VAT)}</b>
+<b>SSCL</b>      = ${fmtLKR(R.VATBASE+R.XID+R.CID+R.SUR)} × 2.5% = <b class="hl">${fmtLKR(R.SSCL)}</b>  <span style="color:var(--muted);font-size:11px">(eff. 01.05.2026 — SSCL Amend. Act No.10/2026 — all vehicles)</span>
+<b>Luxury Tax</b>= MAX(0, ${fmtLKR(R.CIF)} − ${fmtLKR(info.lt)}) × ${(info.lp*100).toFixed(0)}% = <b class="hl">${fmtLKR(R.LUX)}</b>
+<b>VEL</b>       = <b class="hl">15,000</b>   (flat)
+${R.PAL>0?`<b>PAL</b>       = ${fmtLKR(R.VATBASE)} × 7.5% = <b class="hl">${fmtLKR(R.PAL)}</b>\n`:''}${R.SSL>0?`<b>SSL</b>       = ${fmtLKR(R.VATBASE)} × 2.5% = <b class="hl">${fmtLKR(R.SSL)}</b>\n`:''}
+<b style="color:#22c55e">TOTAL DUTY</b> = XID+CID+SUR+VAT+SSCL+Luxury+VEL = <b class="hl">${fmtLKR(R.TOTAL)}</b>
+<b style="color:#5ba3f5">TOTAL COST</b> = ${fmtLKR(R.CIF)} + ${fmtLKR(R.TOTAL)} = <b class="hl">${fmtLKR(R.COST)}</b>`;
+
+  section.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// =============================================================================
+// VEHICLE GUIDE TABLE
+// =============================================================================
+function buildGuide() {
+  const xidRateText = vt => {
+    switch(vt){
+      case 1: return "2,450 – 13,300 /cc";
+      case 2: return "≤1000cc: 1,810,900/unit · 1001–1300: 2,750 · 1301–1500: 3,450 · 1501–1600: 4,800 · 1601–1800: 6,300 · 1801–2000: 6,900 /cc";
+      case 3: return "Same as type 2 except 1601–1800cc = 6,250/cc";
+      case 4: return "5,550 – 14,500 /cc";
+      case 5: return "4,150 – 13,300 /cc";
+      case 6: return "4,150 – 13,300 /cc  (1800–2000cc = 8,300)";
+      case 7: return "≤1yr: 18,100–96,600 /kW · 1–3yr: 36,200–132,800 /kW · >3yr: 48,300–144,900 /kW";
+      case 8: return "GN 2434/04 · ≤1yr: 30,770–111,090 /kW · 1–3yr: 43,440–139,440 /kW · >3yr: 57,960–173,880 /kW";
+      case 9: return "2,100 /cc";
+      case 10: case 11: return "5,432,650 /unit";
+      case 12: return "2,100 /cc";
+      case 13: case 14: return "6,036,300 /unit";
+      case 15: case 16: return "PAL 7.5% + SSL 2.5%";
+    }
+  };
+
+  const body = document.getElementById('guideBody');
+  body.innerHTML = VEHICLE_TYPES.map(t => `
+    <tr>
+      <td><span class="type-num">${t.n}</span></td>
+      <td>
+        <div style="font-weight:600;color:${t.color}">${t.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">${t.note}</div>
+      </td>
+      <td class="num-col" style="font-size:12px;max-width:280px;white-space:normal">${xidRateText(t.n)}</td>
+      <td style="text-align:center"><span class="cat-badge" style="background:${t.bg};color:${t.color}">${t.maxAge} yrs</span></td>
+      <td class="lux-col">${t.lt>0?'LKR '+fmtN(t.lt):'—'}</td>
+      <td class="lux-col">${t.lp>0?(t.lp*100).toFixed(0)+'%':'—'}</td>
+      <td style="text-align:center;font-size:12px">${t.sur?'<span style="color:var(--green)">Yes</span>':'<span style="color:var(--muted)">No</span>'}</td>
+    </tr>`).join('');
+}
+
+// =============================================================================
+// FORMULA REFERENCE
+// =============================================================================
+function buildFormulas() {
+  const fns = [
+    { sig:'=TAX_CAL(type, cc, cif_¥, rate, age)',       desc:'Returns total duty in LKR',                       ex:'=TAX_CAL(2, 1496, 2744000, 2.1, 2)  →  9,699,970' },
+    { sig:'=TAX_COST(type, cc, cif_¥, rate, age)',      desc:'Returns total vehicle cost (CIF LKR + duty)',      ex:'=TAX_COST(2, 1496, 2744000, 2.1, 2)  →  15,462,370' },
+    { sig:'=TAX_DETAIL(type, cc, cif_¥, rate, age, component)', desc:'Returns a single component: "XID" "CID" "SUR" "VAT" "LUX" "VEL" "PAL" "SSL" "SSCL" "TOTAL" "COST" "CIF" "VATBASE"', ex:'=TAX_DETAIL(2, 1496, 2744000, 2.1, 2, "XID")  →  5,161,200' },
+    { sig:'=TAX_HSCODE(type, cc, age)',                 desc:'Returns the HS code reference string',             ex:'=TAX_HSCODE(8, 120, 1)  →  "8703.80.52"' },
+    { sig:'=TAX_YEARCHECK(type, age)',                  desc:'Returns OK or a warning if age limit exceeded',    ex:'=TAX_YEARCHECK(2, 4)  →  "⚠ Over 3 years"' },
+  ];
+  document.getElementById('fnGrid').innerHTML = fns.map(f => `
+    <div class="fn-card">
+      <div class="fn-sig">${f.sig}</div>
+      <div class="fn-desc">${f.desc}</div>
+      <div class="fn-example">${f.ex}</div>
+    </div>`).join('');
+}
+
+// =============================================================================
+// BATCH CALCULATOR
+// =============================================================================
+let batchRows = [];
+
+function addBatchRow(desc='', vt='', cc='', cifJPY='', rate='2.1', age='') {
+  const id = Date.now() + Math.random();
+  batchRows.push(id);
+  const tbody = document.getElementById('batchBody');
+  const tr = document.createElement('tr');
+  tr.id = 'br_' + id;
+  tr.innerHTML = `
+    <td><input type="text"   class="bd" placeholder="Description" value="${desc}" style="min-width:120px" oninput="updateBatch(${id})"></td>
+    <td style="width:70px">
+      <select class="bv" onchange="updateBatch(${id})" style="min-width:60px">
+        <option value="">—</option>
+        ${VEHICLE_TYPES.map(t=>`<option value="${t.n}"${t.n==vt?' selected':''}>${t.n}</option>`).join('')}
+      </select>
+    </td>
+    <td style="width:80px"><input type="number" class="bc" placeholder="cc/kW" value="${cc}" min="1" oninput="updateBatch(${id})" style="min-width:70px"></td>
+    <td style="width:110px"><input type="number" class="bcif" placeholder="¥" value="${cifJPY}" min="1" step="10000" oninput="updateBatch(${id})" style="min-width:100px"></td>
+    <td style="width:70px"><input type="number" class="br2" placeholder="rate" value="${rate}" min="0.01" step="0.01" oninput="updateBatch(${id})" style="min-width:60px"></td>
+    <td style="width:60px"><input type="number" class="ba" placeholder="age" value="${age}" min="0" max="30" step="0.5" oninput="updateBatch(${id})" style="min-width:50px"></td>
+    <td class="batch-output" id="bo_cif_${id}">—</td>
+    <td class="batch-output" id="bo_xid_${id}">—</td>
+    <td class="batch-output" id="bo_cid_${id}">—</td>
+    <td class="batch-output" id="bo_sur_${id}">—</td>
+    <td class="batch-output" id="bo_vat_${id}">—</td>
+    <td class="batch-output" id="bo_lux_${id}">—</td>
+    <td class="batch-output total-duty" id="bo_tot_${id}">—</td>
+    <td class="batch-output total-cost" id="bo_cost_${id}">—</td>
+    <td><button class="btn-del" onclick="delBatchRow(${id})">✕</button></td>`;
+  tbody.appendChild(tr);
+  // If values pre-filled, calculate immediately
+  if (vt && cc && cifJPY && rate && age !== '') updateBatch(id);
+}
+
+function delBatchRow(id) {
+  batchRows = batchRows.filter(x => x !== id);
+  const el = document.getElementById('br_' + id);
+  if (el) el.remove();
+  updateBatchTotals();
+}
+
+function updateBatch(id) {
+  const tr   = document.getElementById('br_' + id);
+  const vt   = tr.querySelector('.bv').value;
+  const cc   = tr.querySelector('.bc').value;
+  const cifJ = tr.querySelector('.bcif').value;
+  const rt   = tr.querySelector('.br2').value;
+  const age  = tr.querySelector('.ba').value;
+
+  const set = (key, val) => {
+    const el = document.getElementById(`bo_${key}_${id}`);
+    if (!el) return;
+    el.textContent = val === null ? '—' : fmtN(val);
+    el.className = 'batch-output' + (val === null ? '' : key==='tot'?' total-duty':key==='cost'?' total-cost':'');
+    if (val === 0) el.className += ' zero';
+  };
+
+  if (!vt || !cc || !cifJ || !rt || age === '') {
+    ['cif','xid','cid','sur','vat','lux','tot','cost'].forEach(k => set(k, null));
+    updateBatchTotals(); return;
+  }
+
+  const R = calcTax(vt, cc, cifJ, rt, age);
+  set('cif',  R.CIF);
+  set('xid',  R.XID);
+  set('cid',  R.CID);
+  set('sur',  R.SUR);
+  set('vat',  R.VAT);
+  set('lux',  R.LUX);
+  set('tot',  R.TOTAL);
+  set('cost', R.COST);
+  updateBatchTotals();
+}
+
+function updateBatchTotals() {
+  const keys = ['cif','xid','cid','sur','vat','lux','tot','cost'];
+  const totals = {};
+  keys.forEach(k => totals[k] = 0);
+  let hasAny = false;
+
+  batchRows.forEach(id => {
+    keys.forEach(k => {
+      const el = document.getElementById(`bo_${k}_${id}`);
+      if (el && el.textContent !== '—') {
+        totals[k] += parseInt(el.textContent.replace(/,/g,'')) || 0;
+        hasAny = true;
+      }
+    });
+  });
+
+  const foot = document.getElementById('batchFoot');
+  if (!hasAny) { foot.innerHTML = ''; return; }
+  foot.innerHTML = `<tr class="batch-foot">
+    <td colspan="6" style="font-size:12px;color:var(--muted);padding:10px 12px">Totals  (${batchRows.length} vehicles)</td>
+    ${keys.map((k,i) => `<td class="batch-output${k==='tot'?' total-duty':k==='cost'?' total-cost':''}" style="padding:10px 12px">${fmtN(totals[k])}</td>`).join('')}
+    <td></td>
+  </tr>`;
+}
+
+// =============================================================================
+// TAB SWITCHER
+// =============================================================================
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// =============================================================================
+// INIT
+// =============================================================================
+buildGuide();
+buildFormulas();
+
+// Add 3 empty batch rows on load
+addBatchRow('Petrol Hybrid 1496cc (example)', 2, 1496, 2744000, 2.1, 2);
+addBatchRow();
+addBatchRow();
+
+// Keyboard shortcut: Enter in any calc input → calculate
+document.querySelectorAll('#tab-calc input, #tab-calc select').forEach(el => {
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+});
+</script>
+</body>
+</html>
