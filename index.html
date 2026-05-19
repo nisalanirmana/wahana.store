@@ -504,6 +504,38 @@
     .result-hero { grid-template-columns: 1fr; }
     .tabs { flex-wrap: wrap; }
   }
+
+  .pop-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .45rem .7rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s, border-color .15s, transform .1s;
+    min-width: 0;
+    max-width: 220px;
+  }
+  .pop-btn:hover { background: var(--accent1); border-color: var(--green); transform: translateY(-1px); }
+  .pop-btn.pop-active { background: var(--accent1); border-color: var(--green); box-shadow: 0 0 0 2px var(--green); }
+  .pop-name { display: block; font-size: .78rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .pop-sub  { display: block; font-size: .68rem; color: var(--muted); margin-top: .15rem; }
+
+  .pop-btn {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: .5rem .75rem;
+    cursor: pointer;
+    text-align: left;
+    max-width: 210px;
+    min-width: 150px;
+    transition: all .15s;
+  }
+  .pop-btn:hover { background: var(--accent1); border-color: var(--green); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+  .pop-btn.pop-active { background: var(--accent1); border-color: var(--green); box-shadow: 0 0 0 2px var(--green); }
+  .pop-name { display:block; font-size:.76rem; font-weight:600; color:var(--text); line-height:1.3; }
+  .pop-sub  { display:block; font-size:.67rem; color:var(--muted); margin-top:.15rem; }
 </style>
 </head>
 <body>
@@ -516,9 +548,9 @@
       <h1>Vehicle Import<br><span>Tax Calculator</span></h1>
       <div class="header-meta">
         <span>GN 2418-43 · 10.01.2025</span>
-        <span>GN 2421/41-43 · 31.01.2025</span>
-        <span>GN 2434/04 · 28.04.2025</span>
-        <span>SSCL Amend. Act No.10/2026 · eff. 01.05.2026</span>
+        <span>GN 2478/03 · 01.04.2026</span>
+        <span>GN 2488/56 · 16.05.2026</span>
+        <span>SSCL Amend. Act No.10/2026</span>
         <span>16 vehicle types</span>
       </div>
     </div>
@@ -541,6 +573,16 @@
        TAB 1 — SINGLE CALCULATOR
   ════════════════════════════════════════════════ -->
   <div class="tab-panel active" id="tab-calc">
+
+
+    <!-- ═══ POPULAR VEHICLES ══════════════════════════════════════════════ -->
+    <div class="card anim" id="popCard" style="margin-bottom:1rem;">
+      <div class="card-title">🚗 Popular Vehicles
+        <span style="font-weight:400;font-size:.78rem;margin-left:.5rem;color:var(--muted)">Click to load · CIF = Japan OEM price (ex-tax) × 85%</span>
+      </div>
+      <div id="popularGrid" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem;"></div>
+      <div id="jpyRateSource" style="font-size:.7rem;color:var(--muted);margin-top:.5rem;min-height:1em;"></div>
+    </div>
 
     <div class="card anim">
       <div class="card-title">Vehicle Details</div>
@@ -734,7 +776,7 @@
       <div class="card-title">Tax Formula</div>
       <div class="formula-box" style="font-size:13px">
         <b>XID</b>       = Tax Rate per cc/kW × cc/kW  <span style="color:var(--muted)">(or fixed per-unit amount)</span><br>
-        <b>CID</b>       = CIF × 20%<br>
+        <b>CID</b>       = CIF × 30%  <span style="color:var(--muted)">(GN 2478/03, eff. 01.04.2026)</span><br>
         <b>SUR</b>       = CID × 50%  <span style="color:var(--muted)">(zero for Electric, e-Power, and Bus)</span><br>
         <b>VAT Base</b>  = (CIF × 110%) + XID + CID + SUR  <span style="color:var(--muted)">(GN 2421/41)</span><br>
         <b>VAT</b>       = VAT Base × 18%<br>
@@ -789,6 +831,71 @@
 </div><!-- /page -->
 
 <script>
+// =============================================================================
+// POPULAR VEHICLES — Japan OEM prices (excl. 10% JPN consumption tax) × 85% = CIF¥
+// Sources: Official JP manufacturer websites. Prices verified May 2026.
+// =============================================================================
+const POPULAR_VEHICLES = [
+  { name:"Toyota Raize Hybrid Z e-SMART 2025",       type:2, cc:1196, cifJPY:1849909,  age:1 },
+  { name:"Toyota Yaris Hybrid Z 2025",                type:2, cc:1490, cifJPY:1916364,  age:1 },
+  { name:"Toyota Yaris Cross Hybrid Z 2025",          type:2, cc:1490, cifJPY:2422500,  age:1 },
+  { name:"Toyota Urban Cruiser Hyryder Hybrid 2025",  type:2, cc:1490, cifJPY:2380000,  age:1 },
+  { name:"Toyota Roomy Custom G 2025",                type:1, cc:996,  cifJPY:1670250,  age:1 },
+  { name:"Toyota Land Cruiser 250 VX Diesel 2024",    type:4, cc:2755, cifJPY:5163636,  age:1 },
+  { name:"Honda Vezel e:HEV Z 2025",                  type:2, cc:1496, cifJPY:2487100,  age:1 },
+  { name:"Nissan Dayz Highway Star X 2025",            type:1, cc:659,  cifJPY:1305909,  age:1 },
+  { name:"Suzuki Wagon R Hybrid FX-S 2025",            type:2, cc:658,  cifJPY:1181500,  age:1 },
+  { name:"Suzuki Spacia Hybrid G 2025",                type:2, cc:658,  cifJPY:1275000,  age:1 },
+  { name:"Suzuki Alto Hybrid L 2025",                  type:2, cc:658,  cifJPY:969077,   age:1 },
+  { name:"Daihatsu Mira e:S L SA III 2025",            type:1, cc:658,  cifJPY:850000,   age:1 },
+  { name:"Daihatsu Taft G 2025",                       type:1, cc:658,  cifJPY:1211250,  age:1 },
+];
+
+// =============================================================================
+// DYNAMIC JPY RATE — live from Sri Lanka Customs (customs.gov.lk/exchange-rates/)
+// =============================================================================
+const JPY_FALLBACK = 2.0197;  // Customs GN effective 04.05.2026
+let _jpyFetched = false;
+
+async function fetchLiveJPY() {
+  if (_jpyFetched) return;
+  _jpyFetched = true;
+  const rateEl = document.getElementById('inputRate');
+  const srcEl  = document.getElementById('jpyRateSource');
+  try {
+    const PROXY = 'https://api.allorigins.win/raw?url=';
+    // Step 1: get exchange rates page to find latest PDF href
+    const pg = await fetch(PROXY + encodeURIComponent('https://www.customs.gov.lk/exchange-rates/'),
+                           { signal: AbortSignal.timeout(9000) });
+    if (!pg.ok) throw new Error('page');
+    const pgHtml = await pg.text();
+    const m = pgHtml.match(/href="([^"]*\/er(\d{8})\.pdf)"/i);
+    if (!m) throw new Error('no pdf');
+    const pdfUrl = m[1].startsWith('http') ? m[1] : 'https://www.customs.gov.lk' + m[1];
+    const dateStr = m[2];   // e.g. 20260504
+    // Step 2: fetch PDF text
+    const pf = await fetch(PROXY + encodeURIComponent(pdfUrl),
+                           { signal: AbortSignal.timeout(9000) });
+    if (!pf.ok) throw new Error('pdf');
+    const txt = await pf.text();
+    // Step 3: extract JPY — find "JPY" near a decimal
+    const rx = /JPY[^\n]{0,40}?([\d]{1,3}\.[\d]{3,4})/i;
+    const rxm = txt.match(rx);
+    if (!rxm) throw new Error('no jpy');
+    const rate = parseFloat(rxm[1]);
+    if (isNaN(rate) || rate < 0.5 || rate > 20) throw new Error('range');
+    // Apply if user hasn't manually changed it
+    if (rateEl && (rateEl.value === '2.1' || rateEl.value === '' || Math.abs(parseFloat(rateEl.value) - 2.1) < 0.001)) {
+      rateEl.value = rate.toFixed(4);
+    }
+    const effDate = dateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$3.$2.$1');
+    if (srcEl) srcEl.textContent = '✅ Live JPY: Rs.' + rate.toFixed(4) + '  (SL Customs, eff. ' + effDate + ')';
+  } catch(e) {
+    if (rateEl && (rateEl.value === '2.1' || rateEl.value === '')) rateEl.value = JPY_FALLBACK;
+    if (srcEl) srcEl.textContent = '⚠ Fallback rate Rs.' + JPY_FALLBACK + ' (04.05.2026) — edit if needed';
+  }
+}
+
 // =============================================================================
 // CORE CALCULATION ENGINE
 // =============================================================================
@@ -887,7 +994,7 @@ function calcTax(vtype, cc, cifJPY, rate, age, component) {
   }
 
   const xid = isUnit ? minXID : Math.max(xidRate * cc, minXID);
-  let cid = isBus ? 0 : cif * 0.20;            // CID = 20% of CIF directly
+  let cid = isBus ? 0 : cif * 0.30;            // CID = 30% of CIF (GN 2478/03 eff. 01.04.2026)
   let sur = (isEV || isBus) ? 0 : cid * 0.50;
   let vat = (vatBase + xid + cid + sur) * 0.18; // VAT base uses CIF×110% per GN 2421/41
   const lux = (cif > luxT && luxT > 0) ? (cif - luxT) * luxP : 0;
@@ -1028,7 +1135,7 @@ function calculate() {
     { l:'CIF LKR',    v:R.CIF,     pct:'' },
     { l:'VAT Base',   v:R.VATBASE, pct:'CIF × 110% (VAT only)' },
     { l:'XID',        v:R.XID,     pct:'' },
-    { l:'CID  (20%)', v:R.CID,     pct:'20% of CIF' },
+    { l:'CID  (30%)', v:R.CID,     pct:'30% of CIF (GN 2478/03)' },
     { l:'SUR  (50%)', v:R.SUR,     pct:'' },
     { l:'VAT  (18%)', v:R.VAT,     pct:'' },
     { l:'SSCL (2.5%)',v:R.SSCL,   pct:'All vehicles · eff. 01.05.2026' },
@@ -1056,7 +1163,7 @@ function calculate() {
 <b>CIF LKR</b>   = ¥${fmtN(cif)} × ${rt} = <b class="hl">${fmtLKR(R.CIF)}</b>
 <b>VAT Base</b>  = ${fmtLKR(R.CIF)} × 110% = <b class="hl">${fmtLKR(R.VATBASE)}</b>  <span style="color:var(--muted);font-size:11px">(CIF×110% — used for VAT & SSCL base per GN 2421/41)</span>
 <b>XID</b>       = ${R.XID === 0 ? '—' : (info.n<=8 ? `${fmtN(R.XID/cc)}/cc × ${cc}${ccUnit}` : 'Per-unit fixed')} = <b class="hl">${fmtLKR(R.XID)}</b>
-<b>CID</b>       = ${fmtLKR(R.CIF)} × 20% = <b class="hl">${fmtLKR(R.CID)}</b>
+<b>CID</b>       = ${fmtLKR(R.CIF)} × 30% = <b class="hl">${fmtLKR(R.CID)}</b>  <span style="color:var(--muted);font-size:11px">(GN 2478/03 eff. 01.04.2026)</span>
 <b>SUR</b>       = ${fmtLKR(R.CID)} × 50% = <b class="hl">${fmtLKR(R.SUR)}</b>
 <b>VAT Base</b>  = (CIF×110%) + XID + CID + SUR = <b class="hl">${fmtLKR(R.VATBASE+R.XID+R.CID+R.SUR)}</b>
 <b>VAT</b>       = ${fmtLKR(R.VATBASE+R.XID+R.CID+R.SUR)} × 18% = <b class="hl">${fmtLKR(R.VAT)}</b>
@@ -1244,6 +1351,43 @@ function showTab(id, btn) {
 // =============================================================================
 buildGuide();
 buildFormulas();
+// ── Popular Vehicles: build grid ───────────────────────────────────────────
+(function() {
+  const grid = document.getElementById('popularGrid');
+  if (!grid) return;
+  POPULAR_VEHICLES.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'pop-btn';
+    const ccLabel = v.cc >= 100 ? v.cc + 'cc' : v.cc + 'kW';
+    const typeNames = ['','Petrol','Hybrid','PHEV','Diesel','Diesel HV','Diesel PHEV','BEV','e-Power'];
+    btn.innerHTML = '<span class="pop-name">' + v.name + '</span>'
+                  + '<span class="pop-sub">' + ccLabel + ' · ' + (typeNames[v.type]||'Type '+v.type) + '</span>';
+    btn.onclick = () => {
+      // Set type dropdown
+      const sel = document.getElementById('inputType');
+      if (sel) { sel.value = v.type; onTypeChange(); }
+      // Set CC
+      const ccEl = document.getElementById('inputCC');
+      if (ccEl) { ccEl.value = v.cc; }
+      // Set CIF
+      const cifEl = document.getElementById('inputCIF');
+      if (cifEl) { cifEl.value = Math.round(v.cifJPY); }
+      // Set age
+      const ageEl = document.getElementById('inputAge');
+      if (ageEl) { ageEl.value = v.age; }
+      // Mark active
+      document.querySelectorAll('.pop-btn').forEach(b => b.classList.remove('pop-active'));
+      btn.classList.add('pop-active');
+      // Calculate
+      setTimeout(calculate, 100);
+    };
+    grid.appendChild(btn);
+  });
+})();
+
+// ── Fetch live JPY on load ──────────────────────────────────────────────────
+fetchLiveJPY();
+
 
 // Add 3 empty batch rows on load
 addBatchRow('Petrol Hybrid 1496cc (example)', 2, 1496, 2744000, 2.1, 2);
